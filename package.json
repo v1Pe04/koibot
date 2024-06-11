@@ -1,0 +1,17 @@
+{
+  "name": "psping",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "commandkit": "^0.1.10",
+    "discord.js": "^14.15.2",
+    "dotenv": "^16.4.5"
+  }
+}
