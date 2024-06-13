@@ -1,4 +1,5 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, ComponentType, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
+const noblox = require("noblox.js");
 
 /** @type {import('commandkit').CommandData} */
 const data = new SlashCommandBuilder()
@@ -49,16 +50,61 @@ async function run({ interaction, client }) {
             return;
         }
 
-        await client.db.user_link.create({
-            data: {
-                discord_id: user.id,
-                user_id: `${userid}`,
+        const confirm = new ButtonBuilder()
+            .setCustomId("confirm")
+            .setLabel("Yes")
+            .setStyle(ButtonStyle.Success)
+            .setEmoji("1169572290997014578");
+
+        const cancel = new ButtonBuilder()
+            .setCustomId("cancel")
+            .setLabel("Cancel")
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji("1169572288992124939");
+
+        const row = new ActionRowBuilder().addComponents(confirm, cancel);
+
+        let userInfo = await noblox.getPlayerInfo({ userId: userid }).catch((error) => {console.error("Failed to get user info. " + error); interaction.reply({content: "No user found with provided ID.", ephemeral: true}); return;});
+        
+        const response = await interaction.reply({content: `Are you sure you want to link ${user} to roblox user **${userInfo.username}** (ID: ${userid})?`, components: [row], ephemeral: true});
+        
+        console.log(`User ${interaction.user.username} is trying to link ${user.username} to roblox user ID ${userid}.`)
+        
+        const filter = (i) => i.user.id === interaction.user.id;
+
+        const collector = response.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            filter,
+            time: 30_000,
+        });
+
+
+        collector.on("collect", async (profile) => {
+            if(profile.customId === "confirm") {
+                await client.db.user_link.create({
+                    data: {
+                        discord_id: user.id,
+                        user_id: `${userid}`,
+                    }
+                });
+
+                response.delete();
+
+                interaction.followUp({content: `Linked ${user} to roblox user ID ${userid}.`, ephemeral: true});
+
+                console.log(`User ${interaction.user.username} linked ${user.username} to roblox user ID ${userid}.`);
+
+                collector.stop();
+                return;
+            } else if(profile.customId === "cancel") {
+                interaction.deleteReply();
+
+                console.log(`User ${interaction.user.username} cancelled linking ${user.username} to roblox user ID ${userid}.`);
+
+                collector.stop();
+                return;
             }
         });
-        
-        interaction.reply({content: `Linked ${user} to roblox user ID ${userid}.`, ephemeral: true});
-
-        return;
     }
 
     if (subcommand === "remove") {
@@ -83,13 +129,16 @@ async function run({ interaction, client }) {
 
         interaction.reply({content: `Unlinked ${user}.`, ephemeral: true});
 
+        console.log(`User ${interaction.user.username} unlinked ${user.name}.`);
+
         return;
     }
 }
 
 /** @type {import('commandkit').CommandOptions} */
 const options = {
-    devOnly: true,
+    devOnly: false,
+    userPermissions: ["ManageGuild"],
 };
 
 module.exports = { data, run, options };

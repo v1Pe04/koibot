@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 /** @type {import('commandkit').CommandData} */
 const data = new SlashCommandBuilder()
@@ -41,10 +41,17 @@ async function run({ interaction, client }) {
         }
     });
 
+    if(robloxUser === null) {
+        interaction.reply({content: `User ${targetUser} is linked to a roblox account, but the account has either not been cached, or is not in the clan.`, ephemeral: true});
+        return;
+    }
+
     const response = await client.db.clan_response.findFirst();
     const clan = response.response.data;
-    const points = clan.Battles.HackerBattle.PointContributions.find(obj => obj.UserID == robloxUser.user_id);
-    const diamonds = clan.DiamondContributions.AllTime.Data.find(obj => obj.UserID == robloxUser.user_id);
+    const keys = Object.keys(clan.Battles);
+    const maxKey = keys[keys.length - 1];
+    const points = clan.Battles[maxKey].PointContributions.find(obj => obj.UserID == robloxUser.user_id).Points;
+    const diamonds = clan.DiamondContributions.AllTime.Data.find(obj => obj.UserID == robloxUser.user_id).Diamonds;
     const presence = presenceArray[robloxUser.presence];
     
     if(robloxUser === null) {
@@ -52,12 +59,24 @@ async function run({ interaction, client }) {
         return;
     }
 
-    interaction.reply({content: `**${robloxUser.username}**\n**Points:** ${points.Points}\n**Diamonds:** ${diamonds.Diamonds}\n**Status:** ${presence}`, ephemeral: true});
+    const InfoEmbed = new EmbedBuilder()
+        .setColor(0xD9641E)
+        .setTitle(`${robloxUser.username}`)
+        .setURL(`https://www.roblox.com/users/${robloxUser.user_id}/profile`)
+        .setAuthor({name: presence, iconURL: `https://singlecolorimage.com/get/${presenceColorArray[robloxUser.presence]}/1x1`})
+        .setThumbnail(robloxUser.avatar)
+        .setDescription(`**${maxKey} stats:**\n⭐ **${formatNumber(points)}**\n💎 **${formatNumber(diamonds)}**`)
+        .setTimestamp()
+        .setFooter({text: `Requested by ${interaction.user.username}`, iconURL: interaction.user.avatarURL()});
+
+    interaction.reply({embeds: [InfoEmbed], ephemeral: true});
+
+    console.log(`${interaction.user.username} used /info | ${robloxUser.username} (${robloxUser.user_id})`);
 }
 
 /** @type {import('commandkit').CommandOptions} */
 const options = {
-    devOnly: true,
+    devOnly: false,
 };
 
 module.exports = { data, run, options };
@@ -68,3 +87,23 @@ const presenceArray = {
     2: "In Game",
     3: "In Studio",
 };
+
+const presenceColorArray = {
+    0: "747F8D",
+    1: "747F8D",
+    2: "2ECC71",
+    3: "3498DB",
+}
+
+function formatNumber(num) {
+    if (num >= 1e9) {
+        return (num / 1e9).toFixed(1) + 'B';
+    }
+    if (num >= 1e6) {
+        return (num / 1e6).toFixed(1) + 'M';
+    }
+    if (num >= 1e3) {
+        return (num / 1e3).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
