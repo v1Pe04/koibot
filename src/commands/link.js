@@ -10,20 +10,20 @@ const data = new SlashCommandBuilder()
             .setName("add")
             .setDescription("Link your roblox account to your discord account.")
             .addIntegerOption((option) => option.setName("roblox_id").setDescription("Your roblox user ID.").setRequired(true))
-            .addMentionableOption((option) => option.setName("user").setDescription("The user to link.").setRequired(true))
+            .addUserOption((option) => option.setName("user").setDescription("The user to link.").setRequired(true))
     )
     .addSubcommand((subcommand) =>
         subcommand
             .setName("remove")
             .setDescription("Remove a linked roblox account.")
-            .addMentionableOption((option) => option.setName("user").setDescription("The user to unlink.").setRequired(true))
+            .addUserOption((option) => option.setName("user").setDescription("The user to unlink.").setRequired(true))
     );
 
 /** @param {import('commandkit').SlashCommandProps} param0 */
 async function run({ interaction, client }) {
     const subcommand = interaction.options.getSubcommand();
     if (subcommand === "add") {
-        const user = interaction.options.getMentionable("user");
+        const user = interaction.options.getUser("user");
         const userid = interaction.options.getInteger("roblox_id");
 
         const userLink = await client.db.user_link.findFirst({
@@ -90,7 +90,7 @@ async function run({ interaction, client }) {
     }
 
     if (subcommand === "remove") {
-        const user = interaction.options.getMentionable("user");
+        const user = interaction.options.getUser("user");
 
         const userLink = await client.db.user_link.findFirst({
             where: {
