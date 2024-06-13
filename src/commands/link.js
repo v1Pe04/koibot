@@ -28,12 +28,12 @@ async function run({ interaction, client }) {
 
         const userLink = await client.db.user_link.findFirst({
             where: {
-                OR: [{ discord_id: user.id }, { user_id: userid }],
+                OR: [{ discord_id: user.id }, { user_id: `${userid}` }],
             },
         });
 
         if (userLink) {
-            interaction.reply({ content: `User ${user} is already linked to roblox user ID ${userLink.user_id}.`, ephemeral: true });
+            interaction.reply({ content: `Either the user is already linked or the roblox user ID is already linked.`, ephemeral: true });
             return;
         }
 
